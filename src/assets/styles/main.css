@@ -1,0 +1,45 @@
+@import 'tailwindcss';
+
+/*
+ * Tokens da Lutra (paleta "Golden field" e tipografia).
+ * As cores padrão do Tailwind são removidas de propósito: a interface só usa
+ * estas quatro. Para textos secundários, use opacidade (ex.: text-off-white/60),
+ * nunca um cinza novo.
+ */
+@theme {
+  --color-*: initial;
+  --color-noite: #0e0d0b;
+  --color-off-white: #f4f1ea;
+  --color-ambar: #d98a2b;
+  --color-teal: #3f7c86;
+
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-sans: 'Instrument Sans', system-ui, sans-serif;
+
+  --radius-input: 14px;
+  --radius-card: 24px;
+
+  --blur-glass: 24px;
+}
+
+@layer base {
+  html {
+    background-color: var(--color-noite);
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-noite font-sans text-off-white antialiased;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
