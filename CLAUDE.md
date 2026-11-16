@@ -147,6 +147,14 @@ Convenções:
 - As cores padrão do Tailwind estão desligadas (`--color-*: initial`). Só existem `noite`, `off-white`, `ambar` e `teal`; tons secundários são opacidade (`text-off-white/60`).
 - Preço exibido no front é só exibição: o valor cobrado vem sempre do servidor.
 
+## Fluxo de branches
+
+- `main`: versão estável. Só recebe merge vindo da `dev`, depois dos testes.
+- `dev`: integração. Todo trabalho novo sai dela e volta para ela.
+- Branches de trabalho saem da `dev` (ex.: `feat/landing`, `fix/checkout-pix`) e o **PR é sempre aberto para a `dev`**, nunca direto para a `main`.
+- Quando a `dev` estiver testada (`npm run build` passando e as telas conferidas no navegador), abre-se um PR da `dev` para a `main` e faz-se o merge.
+- Branches de trabalho são apagadas (local e remoto) depois do merge.
+
 ## Direção técnica (sugestões, ainda não decididas)
 
 Para dar vida às imagens, a ideia combinada é:
