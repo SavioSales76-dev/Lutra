@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { usarLenis } from '@/lib/lenis'
 
 /*
  * Rotas organizadas pelas seções da página "prototype" do Figma.
@@ -59,9 +60,18 @@ const routes: RouteRecordRaw[] = [
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
-  scrollBehavior(to, _from, savedPosition) {
+  scrollBehavior(to, from, savedPosition) {
+    const lenis = usarLenis()
+    // Com Lenis, a rolagem até âncoras é dele (suave e sincronizada com o ScrollTrigger)
+    if (lenis && to.hash) {
+      const mesmaPagina = to.path === from.path
+      // Espera a página nova montar (e os pins do ScrollTrigger serem criados) antes de rolar
+      requestAnimationFrame(() => lenis.scrollTo(to.hash, { immediate: !mesmaPagina }))
+      return false
+    }
     if (savedPosition) return savedPosition
     if (to.hash) return { el: to.hash, top: 0 }
+    lenis?.scrollTo(0, { immediate: true })
     return { top: 0 }
   },
 })

@@ -103,6 +103,13 @@ Ainda em aberto:
 
 O front-end vem primeiro: Vue 3 + Vite + TypeScript + Tailwind CSS v4 (plugin `@tailwindcss/vite`), Vue Router e ícones `lucide-vue-next`. O servidor fica para depois.
 
+Animação:
+- **GSAP** para animações feitas em código (sequências, stagger, scroll). Importe sempre de `@/lib/gsap`, que já registra o ScrollTrigger e exporta `prefereMenosMovimento()` e `COM_MOVIMENTO` (use com `gsap.matchMedia()` para animações de scroll, revertendo no `onBeforeUnmount`).
+- **Lenis** (`@/lib/lenis`) para a rolagem suave, ligado no `main.ts` e movido pelo ticker do GSAP. Não liga com `prefers-reduced-motion`. Âncoras (`/#secao`) rolam pelo Lenis no `scrollBehavior` do router. Não usar `scroll-behavior: smooth` no CSS.
+- Seções com trava (pin) recalculam posições no `onMounted` da `LandingView` (`ScrollTrigger.refresh()`).
+- **motion-v** só nos ícones animados de `src/components/icons/animated` (port do lucide-animated, que é React-only).
+- Transições simples de hover e foco ficam em CSS.
+
 Comandos: `npm run dev` (servidor local em http://localhost:5173), `npm run build` (checa tipos e gera `dist/`), `npm run typecheck`.
 
 ```
@@ -122,6 +129,8 @@ src/
     landing/             Seções da landing (Hero, Sobre, Como usar, Pacotes, FAQ)
     effects/             Efeitos visuais (grão de filme, light leaks, vídeo em loop, WebGL)
     dev/ScreenStub.vue   Marcador das telas ainda não implementadas
+  lib/gsap.ts            Entrada única do GSAP + ScrollTrigger (defaults e reduced motion)
+  lib/lenis.ts           Rolagem suave (Lenis) sincronizada com o ScrollTrigger
   composables/           Lógica reutilizável (ex.: reduced motion, lazy por visibilidade)
   services/              Chamadas à API (checkout, login, downloads) quando o servidor existir
   data/catalogo.ts       LUTs e pacotes (nomes, quais LUTs, preço para exibição)
@@ -160,7 +169,7 @@ Convenções:
 Para dar vida às imagens, a ideia combinada é:
 1. **Vídeo em loop** (MP4/WebM leve, `autoplay muted loop playsinline`, com poster) no lugar das fotos da Hero e de outras seções, de preferência com a LUT aplicada.
 2. **Efeitos leves em CSS/JS:** grão de filme animado por cima de tudo, light leaks com `mix-blend-mode: screen`, parallax suave.
-3. **WebGL só onde agrega:** principalmente uma **prévia de LUT ao vivo** (o `.cube` carregado como textura 3D no shader, aplicado em tempo real na imagem), e talvez raios de sol na Hero. Opções: three.js, OGL ou TresJS (three.js declarativo para Vue).
+3. **WebGL só onde agrega:** principalmente uma **prévia de LUT ao vivo** (o `.cube` carregado como textura 3D no shader, aplicado em tempo real na imagem). A biblioteca escolhida é o **OGL** (leve). Em uso hoje: a transição Hero → Sobre (`components/effects/HeroTransicao.vue` + `transicao-shader.ts`), um véu de noite em WebGL por cima de todo o conteúdo da Hero, com frente orgânica guiada pelo scroll (o parallax é feito com GSAP). Um fundo animado contínuo na Hero (vento, raios de sol, grão) foi testado e descartado.
 
 O efeito glass dos cards é feito com `backdrop-filter`. A refração ("liquid glass", via filtro SVG com `feDisplacementMap`) só funciona em Chromium, então deve ser um aprimoramento progressivo, com fallback em blur simples (Safari/iPhone é muito usado pelo público).
 
