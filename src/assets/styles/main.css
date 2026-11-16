@@ -26,6 +26,7 @@
   html {
     background-color: var(--color-noite);
     color-scheme: dark;
+    scroll-behavior: smooth;
   }
 
   body {

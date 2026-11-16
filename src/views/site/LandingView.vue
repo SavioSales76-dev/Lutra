@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import ScreenStub from '@/components/dev/ScreenStub.vue'
+import HeroSection from '@/components/landing/HeroSection.vue'
 </script>
 
 <template>
-  <ScreenStub tela="1.1" titulo="Landing" />
+  <main>
+    <HeroSection />
+    <!-- Próximas seções: Sobre (#sobre), Como usar (#como-usar), Pacotes (#pacotes), FAQ (#faq) e Footer. -->
+  </main>
 </template>
