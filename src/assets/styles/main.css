@@ -26,10 +26,54 @@
   html {
     background-color: var(--color-noite);
     color-scheme: dark;
+    /*
+     * Reserva o espaço da barra de rolagem mesmo quando ela some (ex.: rolagem travada na
+     * tela de carregamento). Sem isso a largura da página muda quando a barra volta, e as
+     * seções travadas pelo ScrollTrigger ficam mais largas que a tela (rolagem horizontal).
+     */
+    scrollbar-gutter: stable;
+
+    /*
+     * Barra de rolagem com a cara da Lutra: fina, trilho em noite e indicador em off-white
+     * translúcido. Propriedades padrão (Chrome 121+, Edge, Firefox); o Safari usa as
+     * regras ::-webkit-scrollbar abaixo.
+     */
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--color-off-white) 22%, transparent) var(--color-noite);
+  }
+
+  html:hover {
+    scrollbar-color: color-mix(in srgb, var(--color-off-white) 32%, transparent) var(--color-noite);
+  }
+
+  /* Safari e Chromium antigos */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-noite);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, var(--color-off-white) 22%, transparent);
+    border: 3px solid var(--color-noite);
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--color-off-white) 40%, transparent);
   }
 
   body {
     @apply bg-noite font-sans text-off-white antialiased;
+  }
+
+  /* Rolagem travada enquanto a tela de carregamento está aberta */
+  html.carregando,
+  html.carregando body {
+    overflow: hidden;
   }
 
   @media (prefers-reduced-motion: reduce) {

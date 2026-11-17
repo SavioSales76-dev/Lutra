@@ -62,6 +62,7 @@ onMounted(() => {
           start: 'top top',
           end: `+=${DURACAO_TRAVA}%`,
           pin: true,
+          anticipatePin: 1,
           scrub: true,
         },
       })

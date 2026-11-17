@@ -18,14 +18,26 @@
   Transição com a Pacotes (o mesmo da Hero → Sobre): quando a base da seção encosta no pé
   da tela, o "palco" (todo o conteúdo visual) passa a descer na mesma velocidade da rolagem,
   então parece parado, enquanto a Pacotes (z-10) sobe por cima. O mesmo véu troca para o
-  modo cobrir, alinhado à base. Não dá para usar um segundo pin no mesmo elemento. As animações vão em cada elemento
-    (.entra), não no contêiner: transform no contêiner isolaria o mix-blend-overlay do título.
+  modo cobrir, alinhado à base. Não dá para usar um segundo pin no mesmo elemento.
+  As animações vão em cada elemento (.entra), não no contêiner: transform no contêiner
+  isolaria o mix-blend-overlay do título.
+
+  Fundo: vídeo em loop (public/video/como-usar.*) por cima da foto (fallback). A LUT é
+  aplicada ao vivo no vídeo (VideoComLut) e a intensidade acompanha a revelação: o vídeo
+  aparece "cru" e o look vai sendo aplicado enquanto a Sobre sai, até a dose (DOSE_DA_LUT) (o passo 3,
+  "Aplique e dose", acontecendo na tela). Por enquanto a LUT é de TESTE e só existe em
+  desenvolvimento (public/_teste/, fora do Git); no build não há LUT e fica o vídeo puro.
+  O vídeo (LoopVideo, sem travar no fim) baixa e toca quando a seção está a até uma tela de
+  distância, para já estar rodando quando a revelação começa.
 -->
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef } from 'vue'
 import { Blend, Import, PackageOpen } from 'lucide-vue-next'
 import VeuTransicao from '@/components/effects/VeuTransicao.vue'
-import { COM_MOVIMENTO, gsap, ScrollTrigger } from '@/lib/gsap'
+import VideoComLut from '@/components/effects/VideoComLut.vue'
+import LoopVideo from '@/components/effects/LoopVideo.vue'
+import { DOSE_DA_LUT, LUT_DE_TESTE } from '@/lib/lut'
+import { COM_MOVIMENTO, gsap, prefereMenosMovimento, ScrollTrigger } from '@/lib/gsap'
 import fundo768 from '@/assets/images/como-usar-768.jpg'
 import fundo1536 from '@/assets/images/como-usar-1536.jpg'
 
@@ -41,12 +53,31 @@ const degrade =
 
 const secao = useTemplateRef<HTMLElement>('secao')
 const palco = useTemplateRef<HTMLElement>('palco')
-const foto = useTemplateRef<HTMLImageElement>('foto')
+const midia = useTemplateRef<HTMLElement>('midia')
+const videoAtual = shallowRef<HTMLVideoElement | null>(null)
+
+/* LUT de teste (só em desenvolvimento; ver comentário do topo) */
+const LUT_TESTE = LUT_DE_TESTE
+
+const usarVideo = ref(false)
+/* Perto da tela (até uma tela de distância): baixa o vídeo e toca. Assim ele já está rodando
+   quando a Sobre começa a revelar a seção, sem trocar de pôster para vídeo na frente da pessoa. */
+const secaoVisivel = ref(false)
+const lutPronta = ref(false)
 
 /* Progresso da revelação (Sobre saindo) e da cobertura (Pacotes chegando) */
 const progressoRevelar = ref(0)
 const progressoCobrir = ref(0)
 const comMovimento = ref(false)
+
+/* Intensidade da LUT: começa crua e chega à dose (DOSE_DA_LUT) quando a seção termina de ser revelada */
+const intensidade = computed(() => {
+  if (!comMovimento.value) return DOSE_DA_LUT
+  const t = Math.min(Math.max((progressoRevelar.value - 0.15) / 0.8, 0), 1)
+  return t * t * (3 - 2 * t) * DOSE_DA_LUT
+})
+const porcentagem = computed(() => Math.round(intensidade.value * 100))
+
 
 /* Um único véu: revela pelo topo e, depois, cobre pela base */
 const cobrindo = computed(() => progressoCobrir.value > 0)
@@ -57,6 +88,7 @@ const veu = computed(() =>
 )
 
 const mm = gsap.matchMedia()
+let observadorVisao: IntersectionObserver | undefined
 
 onMounted(() => {
   mm.add(COM_MOVIMENTO, () => {
@@ -79,6 +111,7 @@ onMounted(() => {
         start: 'top top',
         end: '+=100%',
         pin: true,
+        anticipatePin: 1,
         scrub: true,
         invalidateOnRefresh: true,
         onUpdate: (self) => (progressoRevelar.value = self.progress),
@@ -91,7 +124,7 @@ onMounted(() => {
 
     // Parallax da foto: da revelação até a seção sair da tela
     gsap.fromTo(
-      foto.value,
+      midia.value,
       { yPercent: -6 },
       {
         yPercent: 6,
@@ -136,7 +169,21 @@ onMounted(() => {
   })
 })
 
-onBeforeUnmount(() => mm.revert())
+onMounted(async () => {
+  const nav = navigator as Navigator & { connection?: { saveData?: boolean } }
+  usarVideo.value = !prefereMenosMovimento() && !nav.connection?.saveData
+  await nextTick()
+  if (!secao.value) return
+  observadorVisao = new IntersectionObserver(([entrada]) => (secaoVisivel.value = !!entrada?.isIntersecting), {
+    rootMargin: '100% 0px',
+  })
+  observadorVisao.observe(secao.value)
+})
+
+onBeforeUnmount(() => {
+  mm.revert()
+  observadorVisao?.disconnect()
+})
 </script>
 
 <template>
@@ -153,19 +200,47 @@ onBeforeUnmount(() => mm.revert())
       class="relative isolate flex min-h-dvh items-center overflow-hidden bg-noite px-4 py-28 sm:px-8 lg:min-h-[1000px]"
     >
       <div aria-hidden="true" class="absolute inset-0 -z-10">
-        <!-- 112% de altura e -6% no topo: folga para o parallax não mostrar a borda -->
-        <img
-          ref="foto"
-          :src="fundo1536"
-          :srcset="`${fundo768} 768w, ${fundo1536} 1536w`"
-          sizes="100vw"
-          alt=""
-          loading="lazy"
-          decoding="async"
-          class="absolute inset-x-0 -top-[6%] h-[112%] w-full object-cover"
-        />
+        <!-- Mídia (foto, vídeo e LUT): 112% de altura e -6% no topo, folga para o parallax -->
+        <div ref="midia" class="absolute inset-x-0 -top-[6%] h-[112%] w-full">
+          <img
+            :src="fundo1536"
+            :srcset="`${fundo768} 768w, ${fundo1536} 1536w`"
+            sizes="100vw"
+            alt=""
+            decoding="async"
+            fetchpriority="low"
+            class="absolute inset-0 size-full object-cover"
+          />
+          <LoopVideo
+            v-if="usarVideo"
+            webm="/video/como-usar.webm"
+            mp4="/video/como-usar.mp4"
+            poster="/video/como-usar-poster.jpg"
+            :tocar="secaoVisivel"
+            :preload="secaoVisivel ? 'auto' : 'metadata'"
+            @atual="videoAtual = $event"
+          />
+          <VideoComLut
+            v-if="usarVideo && videoAtual && LUT_TESTE"
+            :video="videoAtual"
+            :lut="LUT_TESTE"
+            :intensidade="intensidade"
+            :ativo="secaoVisivel"
+            @pronto="lutPronta = $event"
+          />
+        </div>
         <div class="absolute inset-0" :style="{ backgroundImage: degrade }" />
       </div>
+
+      <!-- Indicador da LUT aplicada (acompanha a intensidade) -->
+      <p
+        v-if="lutPronta"
+        aria-hidden="true"
+        class="absolute right-4 bottom-6 flex items-center gap-2 text-[13px] text-off-white/60 sm:right-8 lg:right-16"
+      >
+        <span class="size-1.5 rounded-full bg-ambar" />
+        Look aplicado · <span class="tabular-nums">{{ porcentagem }}%</span>
+      </p>
 
       <div class="mx-auto flex w-full max-w-[992px] flex-col items-center gap-12 lg:gap-14">
         <header class="flex flex-col items-center gap-5 text-center">
