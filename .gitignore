@@ -16,3 +16,6 @@ npm-debug.log*
 .idea
 .DS_Store
 Thumbs.db
+
+# LUTs de terceiros só para testes locais (não publicar)
+public/_teste/
