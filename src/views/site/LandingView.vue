@@ -3,6 +3,10 @@ import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import HeroSection from '@/components/landing/HeroSection.vue'
 import SobreSection from '@/components/landing/SobreSection.vue'
+import ComoUsarSection from '@/components/landing/ComoUsarSection.vue'
+import PacotesSection from '@/components/landing/PacotesSection.vue'
+import FaqSection from '@/components/landing/FaqSection.vue'
+import RodapeSection from '@/components/landing/RodapeSection.vue'
 import { ScrollTrigger } from '@/lib/gsap'
 import { usarLenis } from '@/lib/lenis'
 
@@ -34,6 +38,9 @@ onMounted(() => {
   <main>
     <HeroSection />
     <SobreSection />
-    <!-- Próximas seções: Como usar (#como-usar), Pacotes (#pacotes), FAQ (#faq) e Footer. -->
+    <ComoUsarSection />
+    <PacotesSection />
+    <FaqSection />
   </main>
+  <RodapeSection />
 </template>

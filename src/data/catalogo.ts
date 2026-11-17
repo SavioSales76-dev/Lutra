@@ -20,20 +20,21 @@ export const luts: Lut[] = [
  * Quais 6 LUTs entram no Pack Inicial ainda não foi definido;
  * por enquanto são as 6 primeiras.
  * Os preços são apenas para exibição: o valor cobrado é sempre definido no servidor.
+ * Valores do Figma (R$ 68,90 e R$ 98,90), ainda provisórios.
  */
 export const pacotes: Pacote[] = [
   {
     id: 'inicial',
     nome: 'Pack Inicial',
     lutIds: luts.slice(0, 6).map((l) => l.id),
-    precoCentavos: null,
+    precoCentavos: 6890,
     destaque: false,
   },
   {
     id: 'completo',
     nome: 'Pack Completo',
     lutIds: luts.map((l) => l.id),
-    precoCentavos: null,
+    precoCentavos: 9890,
     destaque: true,
   },
 ]

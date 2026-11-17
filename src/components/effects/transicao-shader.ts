@@ -1,15 +1,25 @@
 /*
- * Shader da transição Hero → Sobre: um véu de noite, transparente, que fica por cima de
- * tudo da Hero (foto, título, texto, botões e menu) e sobe junto com a borda da Sobre.
+ * Shader das transições entre as seções com imagem (Hero, Como usar) e a Sobre, que é
+ * escura e fica numa camada acima delas. Um véu de noite, transparente, por cima de todo o
+ * conteúdo da seção com imagem, colado na borda da Sobre e com uma frente orgânica (ruído
+ * fbm que se move devagar). Dois modos (uModo):
  *
- * uProgresso vai de 0 (Hero inteira) a 1 (Sobre cobrindo tudo); a borda da Sobre está na
- * altura (1 - uProgresso) da tela.
- * - Acima da borda, o véu escurece a Hero por uma frente orgânica (ruído fbm que se move
- *   devagar), numa faixa baixa (até ~30% da tela acima da borda).
+ * 0 = cobrir (Hero → Sobre). A Sobre sobe por cima; a borda de CIMA dela está na altura
+ *     (1 - uProgresso) da tela. O véu fica ACIMA da borda.
+ *     uProgresso: 0 = Hero inteira, 1 = coberta.
+ * 1 = revelar (Sobre → Como usar). A Sobre sai por cima; a borda de BAIXO dela está na
+ *     altura (1 - uProgresso) da tela. O véu fica ABAIXO da borda e some no fim.
+ *     uProgresso: 0 = Como usar coberta, 1 = revelada.
+ *
+ * As alturas são em fração da tela (viewport). Quando a seção é mais alta que a tela,
+ * uAlturaTela = altura da tela / altura do canvas e uTopoTela = onde o topo da tela está no
+ * canvas (0 quando a seção está presa pelo topo; 1 - uAlturaTela quando está presa pela base)
+ * convertem para as coordenadas do canvas.
+ *
  * - Colado na borda o véu é noite opaco, então a emenda com a Sobre é invisível.
  * - Na frente do véu há um brilho âmbar bem discreto, como película queimando.
  * A saída é pré-multiplicada (cor já vezes alfa).
- * Coordenadas: (0,0) no canto superior esquerdo.
+ * Coordenadas: (0,0) no canto superior esquerdo do canvas.
  */
 
 export const vertex = /* glsl */ `
@@ -28,12 +38,15 @@ export const fragment = /* glsl */ `
   uniform vec2 uResolucao;
   uniform float uProgresso;
   uniform float uTempo;
+  uniform float uModo;
+  uniform float uAlturaTela;
+  uniform float uTopoTela;
   varying vec2 vUv;
 
   const vec3 NOITE = vec3(14.0, 13.0, 11.0) / 255.0;
   const vec3 AMBAR = vec3(217.0, 138.0, 43.0) / 255.0;
 
-  /* Altura da faixa do véu acima da borda e quanto o ruído deforma a frente */
+  /* Altura da faixa do véu (em fração da tela) e quanto o ruído deforma a frente */
   const float ZONA = 0.3;
   const float RUIDO = 0.5;
 
@@ -66,16 +79,30 @@ export const fragment = /* glsl */ `
   }
 
   void main() {
-    vec2 tela = vec2(vUv.x, 1.0 - vUv.y);
+    // y em fração da TELA (0 = topo do canvas), para as duas seções terem o mesmo véu
+    vec2 canvas = vec2(vUv.x, 1.0 - vUv.y);
+    float y = (canvas.y - uTopoTela) / uAlturaTela;
     float p = clamp(uProgresso, 0.0, 1.0);
 
-    float borda = 1.0 - p;
-    // A faixa cresce no começo da transição, para o véu não aparecer com a Hero parada
-    float zona = mix(0.0001, ZONA, smoothstep(0.0, 0.15, p));
-    float aspecto = uResolucao.x / uResolucao.y;
-    float n = fbm(vec2(tela.x * aspecto * 2.4, tela.y * 2.4 - uTempo * 0.08) + p * 1.5);
+    float aspecto = uResolucao.x / (uResolucao.y * uAlturaTela);
+    float n = fbm(vec2(canvas.x * aspecto * 2.4, y * 2.4 - uTempo * 0.08) + p * 1.5);
 
-    float distancia = max((borda - tela.y) / zona, 0.0);
+    float borda = 1.0 - p;
+    float zona;
+    float distancia;
+    float brilho;
+    if (uModo < 0.5) {
+      // Cobrir: véu acima da borda; a faixa cresce no começo, para não aparecer com a seção parada
+      zona = mix(0.0001, ZONA, smoothstep(0.0, 0.15, p));
+      distancia = max((borda - y) / zona, 0.0);
+      brilho = smoothstep(0.0, 0.15, p);
+    } else {
+      // Revelar: véu abaixo da borda; a faixa some no fim, quando a seção fica toda à mostra
+      zona = mix(0.0001, ZONA, 1.0 - smoothstep(0.7, 1.0, p));
+      distancia = max((y - borda) / zona, 0.0);
+      brilho = 1.0 - smoothstep(0.7, 1.0, p);
+    }
+
     // O ruído cresce a partir da borda: colado nela o véu é sempre opaco (emenda invisível)
     float amplitude = RUIDO * smoothstep(0.0, 0.35, distancia);
     float visivel = smoothstep(0.0, 1.0, distancia + (n - 0.5) * amplitude);
@@ -83,8 +110,8 @@ export const fragment = /* glsl */ `
 
     // Brilho âmbar discreto na frente do véu
     float frente = visivel * (1.0 - visivel) * 4.0;
-    vec3 cor = mix(NOITE, AMBAR, frente * 0.12 * smoothstep(0.0, 0.15, p));
-    float alfa = clamp(veu + frente * 0.04, 0.0, 1.0);
+    vec3 cor = mix(NOITE, AMBAR, frente * 0.12 * brilho);
+    float alfa = clamp(veu + frente * 0.04 * brilho, 0.0, 1.0);
 
     gl_FragColor = vec4(cor * alfa, alfa);
   }

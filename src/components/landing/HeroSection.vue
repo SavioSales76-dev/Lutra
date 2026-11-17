@@ -2,13 +2,13 @@
   Hero da landing (Figma: 1.1 Landing › "Hero — Desktop", node 50:9).
   A imagem é provisória (gerada no Figma); a ideia é trocar por vídeo em loop com a LUT aplicada.
   Camadas: imagem e degradê no fundo (-z-10, dentro do `isolate`), conteúdo sem z-index
-  para que os mix-blend do título e do menu misturem com a imagem.
+  para que o mix-blend do título misture com a imagem. O topo (SiteHeader) fica no SiteLayout.
 
   Saída por rolagem: a Hero fica fixa (pin sem espaço extra) enquanto a seção Sobre sobe por cima.
   - Parallax: a foto sobe e se aproxima devagar; título, texto e botões sobem em velocidades
     diferentes (profundidade).
-  - HeroTransicao (WebGL) é um véu de noite que fica na camada mais alta da Hero, por cima do
-    título, do texto, dos botões e do menu, e sobe junto com a borda da Sobre com uma frente
+  - VeuTransicao (WebGL, modo cobrir) é um véu de noite que fica na camada mais alta da Hero, por cima do
+    título, do texto e dos botões, e sobe junto com a borda da Sobre com uma frente
     orgânica. Sem WebGL, o texto some por opacidade e a camada "sombra" escurece a foto.
   As animações vão em cada elemento (h1, p, botões), não no contêiner: opacidade ou transform
   no contêiner isolaria o mix-blend-overlay do título.
@@ -16,12 +16,11 @@
 <script setup lang="ts">
 import ContrastIcon from '@/components/icons/animated/ContrastIcon.vue'
 import PaletteIcon from '@/components/icons/animated/PaletteIcon.vue'
-import SiteHeader from '@/components/layout/SiteHeader.vue'
 import LButton from '@/components/ui/LButton.vue'
 import hero768 from '@/assets/images/hero-768.jpg'
 import hero1536 from '@/assets/images/hero-1536.jpg'
 import { onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
-import HeroTransicao from '@/components/effects/HeroTransicao.vue'
+import VeuTransicao from '@/components/effects/VeuTransicao.vue'
 import { COM_MOVIMENTO, gsap } from '@/lib/gsap'
 
 /* Degradê do Figma: escurece de leve o topo e termina em noite sólido, emendando com a seção seguinte. */
@@ -98,8 +97,6 @@ onBeforeUnmount(() => mm.revert())
       <div ref="sombra" class="hero-sombra absolute inset-0 bg-noite opacity-0" />
     </div>
 
-    <SiteHeader />
-
     <div class="flex flex-1 flex-col items-center justify-center px-4 py-24 text-center">
       <h1
         ref="titulo"
@@ -121,7 +118,7 @@ onBeforeUnmount(() => mm.revert())
     </div>
 
     <!-- Véu da transição: último filho e sem z-index, para ficar por cima de todo o conteúdo -->
-    <HeroTransicao v-if="comMovimento" :progresso="progresso" />
+    <VeuTransicao v-if="comMovimento" modo="cobrir" :progresso="progresso" />
   </section>
 </template>
 

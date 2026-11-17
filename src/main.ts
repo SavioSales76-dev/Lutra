@@ -10,6 +10,15 @@ import './assets/styles/main.css'
  */
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
 
+/*
+ * Refração do vidro (filtro SVG em backdrop-filter) só funciona em navegadores Chromium.
+ * Nos outros (Safari, Firefox) o .vidro fica só com blur. Ver main.css.
+ */
+const navegador = navigator as Navigator & { userAgentData?: { brands?: { brand: string }[] } }
+if (navegador.userAgentData?.brands?.some((b) => b.brand === 'Chromium')) {
+  document.documentElement.setAttribute('data-refracao', '')
+}
+
 iniciarLenis()
 
 createApp(App).use(router).mount('#app')

@@ -1,13 +1,18 @@
 <!--
   Sobre (Figma: 1.1 Landing › "Sobre — Desktop", node 56:2).
 
+  Camadas: a Sobre (z-10) fica acima da Hero e da Como usar, que estão na mesma camada.
+
   Coreografia com o scroll (GSAP ScrollTrigger + Lenis):
-  1. A seção sobe por cima da Hero, que fica fixa atrás (ver HeroSection). O fade da foto é
-     feito em WebGL (HeroTransicao); sem WebGL, a borda de cima vira um degradê de noite em
-     vários pontos. O conteúdo entra com parallax, mais devagar que o fundo.
+  1. A seção sobe por cima da Hero, que fica fixa atrás (ver HeroSection). O fade é o véu
+     em WebGL da Hero (VeuTransicao, modo cobrir); sem WebGL, um degradê de noite acima da
+     borda de cima (.cortina-cima, em main.css). O conteúdo entra com parallax, mais devagar que o fundo.
   2. Ao encostar no topo, a seção trava (pin) e o manifesto acende palavra por palavra
      conforme a pessoa rola: começa a 16% de opacidade e vai a 100%.
-  3. Quando a última palavra acende, a trava solta e a rolagem segue normal.
+  3. Com o texto todo aceso, a trava solta e a Sobre sai por cima, revelando a Como usar,
+     que fica fixa embaixo (ver ComoUsarSection). O fade é o véu em WebGL da Como usar
+     (modo revelar); sem WebGL, um degradê de noite abaixo da borda de baixo (.cortina-baixo).
+     O conteúdo sai com parallax, mais devagar que o fundo.
 
   Com prefers-reduced-motion não há trava nem revelação: o texto aparece inteiro e legível.
   As palavras são divididas no template (não com SplitText) para o Vue continuar dono do DOM.
@@ -50,7 +55,7 @@ onMounted(() => {
       },
     )
 
-    gsap
+    const trava = gsap
       .timeline({
         scrollTrigger: {
           trigger: secao.value,
@@ -63,6 +68,20 @@ onMounted(() => {
       .to(palavras, { opacity: 1, ease: 'none', stagger: 0.1, duration: 0.3 })
       // Pequena pausa no fim, com o texto todo aceso, antes de soltar a trava
       .to({}, { duration: 0.6 })
+
+    // Parallax de saída: enquanto a seção sai por cima (uma tela depois da trava),
+    // o conteúdo vai mais devagar que o fundo
+    gsap.to(conteudo.value, {
+      yPercent: 22,
+      ease: 'none',
+      scrollTrigger: {
+        trigger: secao.value,
+        start: () => trava.scrollTrigger?.end ?? 0,
+        end: () => (trava.scrollTrigger?.end ?? 0) + window.innerHeight,
+        scrub: true,
+        invalidateOnRefresh: true,
+      },
+    })
   })
 })
 
@@ -74,7 +93,7 @@ onBeforeUnmount(() => mm.revert())
     id="sobre"
     ref="secao"
     aria-labelledby="sobre-titulo"
-    class="sobre relative z-10 flex min-h-dvh items-center bg-noite px-4 py-24 sm:px-8"
+    class="cortina-cima cortina-baixo relative z-10 flex min-h-dvh items-center bg-noite px-4 py-24 sm:px-8"
   >
     <div ref="conteudo" class="mx-auto flex w-full max-w-[880px] flex-col gap-8 lg:gap-10">
       <h2 id="sobre-titulo" class="text-base font-medium tracking-[-0.02em] text-off-white/50">Sobre a Lutra</h2>
@@ -89,40 +108,3 @@ onBeforeUnmount(() => mm.revert())
     </div>
   </section>
 </template>
-
-<style scoped>
-/*
- * "Cortina" acima da seção: degradê de noite com vários pontos (curva suave, não linear),
- * para a borda que sobe por cima da Hero não aparecer como uma linha.
- */
-.sobre::before {
-  content: '';
-  position: absolute;
-  inset-inline: 0;
-  bottom: 100%;
-  height: 40vh;
-  pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    rgb(14 13 11 / 0) 0%,
-    rgb(14 13 11 / 0.03) 15%,
-    rgb(14 13 11 / 0.1) 30%,
-    rgb(14 13 11 / 0.22) 45%,
-    rgb(14 13 11 / 0.4) 60%,
-    rgb(14 13 11 / 0.62) 75%,
-    rgb(14 13 11 / 0.82) 88%,
-    rgb(14 13 11) 100%
-  );
-}
-</style>
-
-<!--
-  Sem "scoped" de propósito: a regra depende de um atributo no <html>, fora do componente.
-  (Num bloco scoped, :global(...) transforma a regra inteira em "html { display: none }".)
--->
-<style>
-/* Com o WebGL da Hero ativo, o shader faz o fade (dissolve orgânico) e este degradê sai */
-:root[data-transicao-webgl] .sobre::before {
-  display: none;
-}
-</style>

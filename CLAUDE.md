@@ -75,7 +75,7 @@ Só duas famílias (Google Fonts):
 
 ## Produto e fluxos
 
-- **Pack Inicial:** 6 LUTs. **Pack Completo:** 12 LUTs (destaque, "Mais escolhido"). Preços ainda não definidos (`R$ XX` no layout).
+- **Pack Inicial:** 6 LUTs. **Pack Completo:** 12 LUTs (destaque, "Mais escolhido"). Preços provisórios do Figma: R$ 68,90 e R$ 98,90 (em `src/data/catalogo.ts`).
 - Cada LUT tem versão **LOG** e **Rec.709**. A área do cliente tem um seletor entre as duas.
 - Nomes provisórios das 12 LUTs: Golden Hour, Teal Coast, Dusk, Ember, Faded Memory, Blue Hour, Olive Road, Safelight, Seafoam, Velvet, Moss, Rosé.
 - **Pagamento:** checkout próprio no site, com Pix (padrão) e cartão de crédito. O Pix gera QR Code + código copia e cola, com expiração de 30 minutos. O provedor de pagamento ainda não foi definido.
@@ -169,7 +169,7 @@ Convenções:
 Para dar vida às imagens, a ideia combinada é:
 1. **Vídeo em loop** (MP4/WebM leve, `autoplay muted loop playsinline`, com poster) no lugar das fotos da Hero e de outras seções, de preferência com a LUT aplicada.
 2. **Efeitos leves em CSS/JS:** grão de filme animado por cima de tudo, light leaks com `mix-blend-mode: screen`, parallax suave.
-3. **WebGL só onde agrega:** principalmente uma **prévia de LUT ao vivo** (o `.cube` carregado como textura 3D no shader, aplicado em tempo real na imagem). A biblioteca escolhida é o **OGL** (leve). Em uso hoje: a transição Hero → Sobre (`components/effects/HeroTransicao.vue` + `transicao-shader.ts`), um véu de noite em WebGL por cima de todo o conteúdo da Hero, com frente orgânica guiada pelo scroll (o parallax é feito com GSAP). Um fundo animado contínuo na Hero (vento, raios de sol, grão) foi testado e descartado.
+3. **WebGL só onde agrega:** principalmente uma **prévia de LUT ao vivo** (o `.cube` carregado como textura 3D no shader, aplicado em tempo real na imagem). A biblioteca escolhida é o **OGL** (leve). Em uso hoje: as transições entre seções com imagem e seções escuras (`components/effects/VeuTransicao.vue` + `transicao-shader.ts`), um véu de noite em WebGL por cima de todo o conteúdo da seção, com frente orgânica guiada pelo scroll. Camadas: as seções escuras (Sobre, Pacotes, FAQ) ficam acima (z-10); as com imagem (Hero, Como usar, Footer) ficam na mesma camada, abaixo delas. Padrão das transições: quando a escura **entra**, a seção com imagem fica parada e a escura sobe por cima (modo `cobrir`: Hero → Sobre, Como usar → Pacotes); quando a escura **sai**, a seção com imagem tem margem negativa de uma tela e fica travada embaixo sendo revelada (modo `revelar`: Sobre → Como usar, FAQ → Footer). O véu fica sempre colado na borda da seção escura; sem WebGL, as classes `.cortina-cima` / `.cortina-baixo` (main.css) fazem o fade. Seções escuras seguidas (Pacotes → FAQ) não têm transição. O parallax é feito com GSAP. Um fundo animado contínuo na Hero (vento, raios de sol, grão) foi testado e descartado.
 
 O efeito glass dos cards é feito com `backdrop-filter`. A refração ("liquid glass", via filtro SVG com `feDisplacementMap`) só funciona em Chromium, então deve ser um aprimoramento progressivo, com fallback em blur simples (Safari/iPhone é muito usado pelo público).
 
@@ -181,10 +181,10 @@ O efeito glass dos cards é feito com `backdrop-filter`. A refração ("liquid g
 
 ## Pendências conhecidas
 
-- Preços dos dois packs e valor por LUT.
+- Preços finais dos dois packs (os do Figma, R$ 68,90 e R$ 98,90, são provisórios) e valor por LUT.
 - Versão mobile de todas as telas.
 - Conteúdo final das páginas legais (os textos atuais são exemplo e precisam de revisão jurídica). Política de reembolso de 7 dias com base no CDC, a confirmar.
 - Os caminhos dos menus nos guias de instalação e a resposta da FAQ sobre CapCut precisam ser conferidos nas versões atuais dos programas.
-- Respostas das perguntas fechadas da FAQ (só a primeira tem texto).
+- Respostas da FAQ: só a primeira veio do Figma. As outras estão em `src/data/faq.ts` como texto provisório e precisam de revisão, principalmente licença de uso ("trabalhos para clientes") e reembolso.
 - Provedor de envio de e-mails, hospedagem do Postgres e dos arquivos `.cube` (ver "Stack").
 - E-mail de contato e redes sociais (`contato@getlutra.com.br`, `@getlutra` são provisórios).

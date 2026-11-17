@@ -65,8 +65,13 @@ export const router = createRouter({
     // Com Lenis, a rolagem até âncoras é dele (suave e sincronizada com o ScrollTrigger)
     if (lenis && to.hash) {
       const mesmaPagina = to.path === from.path
-      // Espera a página nova montar (e os pins do ScrollTrigger serem criados) antes de rolar
-      requestAnimationFrame(() => lenis.scrollTo(to.hash, { immediate: !mesmaPagina }))
+      // Espera a página nova montar (e os pins do ScrollTrigger serem criados) antes de rolar.
+      // Seções reveladas por uma tela de scroll (data-ancora-deslocamento="tela") param já à mostra.
+      requestAnimationFrame(() => {
+        const alvo = document.querySelector<HTMLElement>(to.hash)
+        const deslocamento = alvo?.dataset.ancoraDeslocamento === 'tela' ? window.innerHeight : 0
+        lenis.scrollTo(alvo ?? to.hash, { offset: deslocamento, immediate: !mesmaPagina })
+      })
       return false
     }
     if (savedPosition) return savedPosition
