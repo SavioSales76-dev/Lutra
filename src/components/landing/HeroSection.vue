@@ -5,7 +5,7 @@
   sem prefers-reduced-motion e sem economia de dados, aparece com fade quando começa a tocar
   e pausa quando a Hero fica coberta pela Sobre. A tela de carregamento espera por ele (até 4 s).
   Foto e vídeo são provisórios; o ideal é um vídeo real com a LUT aplicada.
-  A LUT (de teste, só em desenvolvimento; ver lib/lut.ts) é aplicada ao vivo no vídeo
+  A LUT (provisória; ver lib/lut.ts) é aplicada ao vivo no vídeo
   (VideoComLut) e sobe de 0 até a dose (DOSE_DA_LUT) logo depois da tela de carregamento.
   Por cima do vídeo (e abaixo do texto), HeroParticulas desenha pólen e poeira na brisa em
   WebGL; entra depois da tela de carregamento e para quando a Hero é coberta.
@@ -34,7 +34,7 @@ import VeuTransicao from '@/components/effects/VeuTransicao.vue'
 import HeroParticulas from '@/components/effects/HeroParticulas.vue'
 import VideoComLut from '@/components/effects/VideoComLut.vue'
 import LoopVideo from '@/components/effects/LoopVideo.vue'
-import { DOSE_DA_LUT, LUT_DE_TESTE } from '@/lib/lut'
+import { DOSE_DA_LUT, LUT_DOS_VIDEOS } from '@/lib/lut'
 import { aguardar, imagemPronta, siteCarregado } from '@/lib/carregamento'
 import { COM_MOVIMENTO, gsap, prefereMenosMovimento } from '@/lib/gsap'
 
@@ -193,9 +193,9 @@ onBeforeUnmount(() => mm.revert())
           @tocando="videoTocando = true"
         />
         <VideoComLut
-          v-if="usarVideo && videoAtual && LUT_DE_TESTE"
+          v-if="usarVideo && videoAtual && LUT_DOS_VIDEOS"
           :video="videoAtual"
-          :lut="LUT_DE_TESTE"
+          :lut="LUT_DOS_VIDEOS"
           :intensidade="intensidadeLut"
           :ativo="progresso < 1"
         />

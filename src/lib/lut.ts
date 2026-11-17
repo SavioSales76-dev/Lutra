@@ -72,10 +72,13 @@ export async function carregarCube(url: string) {
 }
 
 /*
- * LUT de teste usada nos vídeos da landing enquanto não existem as LUTs da Lutra.
- * Só em desenvolvimento: o arquivo fica em public/_teste/ (fora do Git e do build).
+ * LUT aplicada nos vídeos da landing (Hero, Como usar e Footer).
+ * PROVISÓRIA: é de outro pack (VY Clean Sg3, "Pack LUTs by. YNG") e só está aqui para os
+ * vídeos funcionarem enquanto não existem as LUTs da Lutra. Não é para distribuir: trocar
+ * pelo .cube próprio assim que existir. O arquivo é servido pelo site (o navegador precisa
+ * dele para aplicar a LUT), então qualquer pessoa consegue baixá-lo.
  */
-export const LUT_DE_TESTE = import.meta.env.DEV ? '/_teste/lut-teste.cube' : null
+export const LUT_DOS_VIDEOS: string | null = '/luts/lut-provisoria.cube'
 
 /** "Dose" máxima da LUT nos vídeos (como o controle de intensidade dos editores). */
 export const DOSE_DA_LUT = 0.7

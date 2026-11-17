@@ -25,8 +25,7 @@
   Fundo: vídeo em loop (public/video/como-usar.*) por cima da foto (fallback). A LUT é
   aplicada ao vivo no vídeo (VideoComLut) e a intensidade acompanha a revelação: o vídeo
   aparece "cru" e o look vai sendo aplicado enquanto a Sobre sai, até a dose (DOSE_DA_LUT) (o passo 3,
-  "Aplique e dose", acontecendo na tela). Por enquanto a LUT é de TESTE e só existe em
-  desenvolvimento (public/_teste/, fora do Git); no build não há LUT e fica o vídeo puro.
+  "Aplique e dose", acontecendo na tela). A LUT ainda é provisória (ver lib/lut.ts).
   O vídeo (LoopVideo, sem travar no fim) baixa e toca quando a seção está a até uma tela de
   distância, para já estar rodando quando a revelação começa.
 -->
@@ -36,7 +35,7 @@ import { Blend, Import, PackageOpen } from 'lucide-vue-next'
 import VeuTransicao from '@/components/effects/VeuTransicao.vue'
 import VideoComLut from '@/components/effects/VideoComLut.vue'
 import LoopVideo from '@/components/effects/LoopVideo.vue'
-import { DOSE_DA_LUT, LUT_DE_TESTE } from '@/lib/lut'
+import { DOSE_DA_LUT, LUT_DOS_VIDEOS } from '@/lib/lut'
 import { COM_MOVIMENTO, gsap, prefereMenosMovimento, ScrollTrigger } from '@/lib/gsap'
 import fundo768 from '@/assets/images/como-usar-768.jpg'
 import fundo1536 from '@/assets/images/como-usar-1536.jpg'
@@ -56,8 +55,8 @@ const palco = useTemplateRef<HTMLElement>('palco')
 const midia = useTemplateRef<HTMLElement>('midia')
 const videoAtual = shallowRef<HTMLVideoElement | null>(null)
 
-/* LUT de teste (só em desenvolvimento; ver comentário do topo) */
-const LUT_TESTE = LUT_DE_TESTE
+/* LUT provisória dos vídeos (ver lib/lut.ts) */
+const LUT_TESTE = LUT_DOS_VIDEOS
 
 const usarVideo = ref(false)
 /* Perto da tela (até uma tela de distância): baixa o vídeo e toca. Assim ele já está rodando
