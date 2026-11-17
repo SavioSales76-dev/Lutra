@@ -16,8 +16,8 @@
 
   Fundo: vídeo em loop (public/video/rodape.*, LoopVideo, sem travar no fim) por cima da foto
   (fallback). A LUT é aplicada ao vivo (VideoComLut), como na Como usar: o vídeo aparece cru e
-  o look sobe até a dose do rodapé (DOSE_NO_RODAPE, menor que nas outras seções) enquanto a FAQ sai e revela o rodapé. LUT de teste só
-  em desenvolvimento (ver lib/lut.ts). O vídeo baixa e toca a partir de uma tela de distância.
+  o look sobe até a dose do rodapé (DOSE_NO_RODAPE, menor que nas outras seções) enquanto a FAQ sai e revela o rodapé. LUT provisória (ver
+  lib/lut.ts). O vídeo baixa e toca a partir de uma tela de distância.
 -->
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef } from 'vue'
@@ -25,7 +25,7 @@ import PaletteIcon from '@/components/icons/animated/PaletteIcon.vue'
 import VeuTransicao from '@/components/effects/VeuTransicao.vue'
 import LoopVideo from '@/components/effects/LoopVideo.vue'
 import VideoComLut from '@/components/effects/VideoComLut.vue'
-import { LUT_DE_TESTE } from '@/lib/lut'
+import { LUT_DOS_VIDEOS } from '@/lib/lut'
 import LButton from '@/components/ui/LButton.vue'
 import LTextLink from '@/components/ui/LTextLink.vue'
 import { COM_MOVIMENTO, gsap, prefereMenosMovimento, ScrollTrigger } from '@/lib/gsap'
@@ -173,9 +173,9 @@ onBeforeUnmount(() => {
           @atual="videoAtual = $event"
         />
         <VideoComLut
-          v-if="usarVideo && videoAtual && LUT_DE_TESTE"
+          v-if="usarVideo && videoAtual && LUT_DOS_VIDEOS"
           :video="videoAtual"
-          :lut="LUT_DE_TESTE"
+          :lut="LUT_DOS_VIDEOS"
           :intensidade="intensidade"
           :ativo="perto"
         />
