@@ -43,3 +43,63 @@
     }
   }
 }
+
+@layer components {
+  /*
+   * Vidro (cards sobre imagem): off-white translúcido, borda clara e brilho interno no topo.
+   * No Chrome/Edge (html[data-refracao], ver main.ts) ganha refração de vidro líquido com o
+   * filtro SVG #lutra-refracao (App.vue); nos outros navegadores fica só o blur.
+   */
+  .vidro {
+    background-color: color-mix(in srgb, var(--color-off-white) 4%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-off-white) 18%, transparent);
+    box-shadow: inset 0 1px 0 0 color-mix(in srgb, var(--color-off-white) 22%, transparent);
+    -webkit-backdrop-filter: blur(18px) saturate(1.15);
+    backdrop-filter: blur(18px) saturate(1.15);
+  }
+
+  :root[data-refracao] .vidro {
+    backdrop-filter: url(#lutra-refracao) blur(4px) saturate(1.2);
+  }
+
+  /*
+   * "Cortinas" das seções escuras que passam por cima das seções com imagem (Sobre, Pacotes,
+   * FAQ): degradê de noite em vários pontos (curva suave, não linear) acima (.cortina-cima)
+   * ou abaixo (.cortina-baixo) da seção, para a borda não aparecer como uma linha.
+   * Só valem sem WebGL: com o véu ativo (html[data-transicao-webgl]) o shader faz o fade.
+   * A seção precisa ser posicionada (relative).
+   */
+  .cortina-cima::before,
+  .cortina-baixo::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    height: 40vh;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      rgb(14 13 11 / 0) 0%,
+      rgb(14 13 11 / 0.03) 15%,
+      rgb(14 13 11 / 0.1) 30%,
+      rgb(14 13 11 / 0.22) 45%,
+      rgb(14 13 11 / 0.4) 60%,
+      rgb(14 13 11 / 0.62) 75%,
+      rgb(14 13 11 / 0.82) 88%,
+      rgb(14 13 11) 100%
+    );
+  }
+
+  .cortina-cima::before {
+    bottom: 100%;
+  }
+
+  .cortina-baixo::after {
+    top: 100%;
+    transform: scaleY(-1);
+  }
+
+  :root[data-transicao-webgl] .cortina-cima::before,
+  :root[data-transicao-webgl] .cortina-baixo::after {
+    display: none;
+  }
+}
