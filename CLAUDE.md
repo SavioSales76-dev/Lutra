@@ -107,6 +107,7 @@ Animação:
 - **GSAP** para animações feitas em código (sequências, stagger, scroll). Importe sempre de `@/lib/gsap`, que já registra o ScrollTrigger e exporta `prefereMenosMovimento()` e `COM_MOVIMENTO` (use com `gsap.matchMedia()` para animações de scroll, revertendo no `onBeforeUnmount`).
 - **Lenis** (`@/lib/lenis`) para a rolagem suave, ligado no `main.ts` e movido pelo ticker do GSAP. Não liga com `prefers-reduced-motion`. Âncoras (`/#secao`) rolam pelo Lenis no `scrollBehavior` do router. Não usar `scroll-behavior: smooth` no CSS.
 - Seções com trava (pin) recalculam posições no `onMounted` da `LandingView` (`ScrollTrigger.refresh()`).
+- Tela de carregamento (`components/layout/TelaCarregamento.vue`, montada no `App.vue`): aparece a cada carregamento do site e sai quando as tarefas registradas com `aguardar()` terminam (fontes, rota, página e foto da Hero), com tempo mínimo de 1,6 s e máximo de 8 s. Trava a rolagem enquanto aparece. Quando sai, `siteCarregado` vira `true` e a Hero faz a entrada. Algo novo que precise estar pronto antes de a página aparecer deve chamar `aguardar()`.
 - **motion-v** só nos ícones animados de `src/components/icons/animated` (port do lucide-animated, que é React-only).
 - Transições simples de hover e foco ficam em CSS.
 
@@ -131,6 +132,8 @@ src/
     dev/ScreenStub.vue   Marcador das telas ainda não implementadas
   lib/gsap.ts            Entrada única do GSAP + ScrollTrigger (defaults e reduced motion)
   lib/lenis.ts           Rolagem suave (Lenis) sincronizada com o ScrollTrigger
+  lib/carregamento.ts    Estado da tela de carregamento: aguardar(promessa), progressoReal, siteCarregado
+  lib/lut.ts             Leitura de LUTs .cube para WebGL (tabela 3D em faixa 2D)
   composables/           Lógica reutilizável (ex.: reduced motion, lazy por visibilidade)
   services/              Chamadas à API (checkout, login, downloads) quando o servidor existir
   data/catalogo.ts       LUTs e pacotes (nomes, quais LUTs, preço para exibição)
@@ -167,9 +170,11 @@ Convenções:
 ## Direção técnica (sugestões, ainda não decididas)
 
 Para dar vida às imagens, a ideia combinada é:
-1. **Vídeo em loop** (MP4/WebM leve, `autoplay muted loop playsinline`, com poster) no lugar das fotos da Hero e de outras seções, de preferência com a LUT aplicada.
+1. **Vídeo em loop** (MP4/WebM leve, `autoplay muted loop playsinline`, com poster) no lugar das fotos da Hero e de outras seções, de preferência com a LUT aplicada. Em uso na Hero e na Como usar (`public/video/`). Processo com ffmpeg: 2× mais lento com interpolação de movimento (`minterpolate`), emenda do loop cruzada (`xfade` de 1,5 s), WebM (VP9) + MP4 (H.264) sem áudio e pôster do primeiro quadro.
 2. **Efeitos leves em CSS/JS:** grão de filme animado por cima de tudo, light leaks com `mix-blend-mode: screen`, parallax suave.
-3. **WebGL só onde agrega:** principalmente uma **prévia de LUT ao vivo** (o `.cube` carregado como textura 3D no shader, aplicado em tempo real na imagem). A biblioteca escolhida é o **OGL** (leve). Em uso hoje: as transições entre seções com imagem e seções escuras (`components/effects/VeuTransicao.vue` + `transicao-shader.ts`), um véu de noite em WebGL por cima de todo o conteúdo da seção, com frente orgânica guiada pelo scroll. Camadas: as seções escuras (Sobre, Pacotes, FAQ) ficam acima (z-10); as com imagem (Hero, Como usar, Footer) ficam na mesma camada, abaixo delas. Padrão das transições: quando a escura **entra**, a seção com imagem fica parada e a escura sobe por cima (modo `cobrir`: Hero → Sobre, Como usar → Pacotes); quando a escura **sai**, a seção com imagem tem margem negativa de uma tela e fica travada embaixo sendo revelada (modo `revelar`: Sobre → Como usar, FAQ → Footer). O véu fica sempre colado na borda da seção escura; sem WebGL, as classes `.cortina-cima` / `.cortina-baixo` (main.css) fazem o fade. Seções escuras seguidas (Pacotes → FAQ) não têm transição. O parallax é feito com GSAP. Um fundo animado contínuo na Hero (vento, raios de sol, grão) foi testado e descartado.
+3. **WebGL só onde agrega:** principalmente uma **prévia de LUT ao vivo** (o `.cube` carregado como textura 3D no shader, aplicado em tempo real na imagem). A biblioteca escolhida é o **OGL** (leve). Em uso hoje: as transições entre seções com imagem e seções escuras (`components/effects/VeuTransicao.vue` + `transicao-shader.ts`), um véu de noite em WebGL por cima de todo o conteúdo da seção, com frente orgânica guiada pelo scroll. Camadas: as seções escuras (Sobre, Pacotes, FAQ) ficam acima (z-10); as com imagem (Hero, Como usar, Footer) ficam na mesma camada, abaixo delas. Padrão das transições: quando a escura **entra**, a seção com imagem fica parada e a escura sobe por cima (modo `cobrir`: Hero → Sobre, Como usar → Pacotes); quando a escura **sai**, a seção com imagem tem margem negativa de uma tela e fica travada embaixo sendo revelada (modo `revelar`: Sobre → Como usar, FAQ → Footer). O véu fica sempre colado na borda da seção escura; sem WebGL, as classes `.cortina-cima` / `.cortina-baixo` (main.css) fazem o fade. Seções escuras seguidas (Pacotes → FAQ) não têm transição. O parallax é feito com GSAP. Um fundo animado contínuo na Hero (vento, raios de sol, grão) foi testado e descartado. Em uso também: pólen e poeira na brisa por cima do vídeo da Hero (`HeroParticulas.vue`, movimento todo na GPU, qualidade adaptativa) e a **LUT aplicada ao vivo** no vídeo da Como usar (`VideoComLut.vue` + `lut-shader.ts`), com a intensidade subindo de 0 a 100% enquanto a seção é revelada.
+
+**Arquivos de teste:** `public/_teste/` é para testes locais com arquivos de terceiros (ex.: a LUT de teste atual, de outro pack). Fica fora do Git (`.gitignore`) e o `vite.config.ts` apaga a pasta do build. A Como usar só usa a LUT de teste em desenvolvimento; no build fica o vídeo sem LUT até existirem as LUTs da Lutra.
 
 O efeito glass dos cards é feito com `backdrop-filter`. A refração ("liquid glass", via filtro SVG com `feDisplacementMap`) só funciona em Chromium, então deve ser um aprimoramento progressivo, com fallback em blur simples (Safari/iPhone é muito usado pelo público).
 

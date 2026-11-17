@@ -13,14 +13,22 @@
   - Links do rodapé com a rolagem de letras (LTextLink).
   - Parallax: a foto anda mais devagar; a chamada sobe um pouco enquanto é revelada.
   Redes e e-mail de contato são provisórios (ver CLAUDE.md).
+
+  Fundo: vídeo em loop (public/video/rodape.*, LoopVideo, sem travar no fim) por cima da foto
+  (fallback). A LUT é aplicada ao vivo (VideoComLut), como na Como usar: o vídeo aparece cru e
+  o look sobe até a dose do rodapé (DOSE_NO_RODAPE, menor que nas outras seções) enquanto a FAQ sai e revela o rodapé. LUT de teste só
+  em desenvolvimento (ver lib/lut.ts). O vídeo baixa e toca a partir de uma tela de distância.
 -->
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef } from 'vue'
 import PaletteIcon from '@/components/icons/animated/PaletteIcon.vue'
 import VeuTransicao from '@/components/effects/VeuTransicao.vue'
+import LoopVideo from '@/components/effects/LoopVideo.vue'
+import VideoComLut from '@/components/effects/VideoComLut.vue'
+import { LUT_DE_TESTE } from '@/lib/lut'
 import LButton from '@/components/ui/LButton.vue'
 import LTextLink from '@/components/ui/LTextLink.vue'
-import { COM_MOVIMENTO, gsap, ScrollTrigger } from '@/lib/gsap'
+import { COM_MOVIMENTO, gsap, prefereMenosMovimento, ScrollTrigger } from '@/lib/gsap'
 import fundo768 from '@/assets/images/rodape-768.jpg'
 import fundo1536 from '@/assets/images/rodape-1536.jpg'
 
@@ -59,11 +67,29 @@ const degrade =
   'linear-gradient(180deg, rgb(14 13 11) 0%, rgb(14 13 11) 6%, rgb(14 13 11 / 0.95) 12%, rgb(14 13 11 / 0.82) 20%, rgb(14 13 11 / 0.6) 28%, rgb(14 13 11 / 0.4) 36%, rgb(14 13 11 / 0.24) 45%, rgb(14 13 11 / 0.12) 55%, rgb(14 13 11 / 0.08) 62%, rgb(14 13 11 / 0.05) 72%, rgb(14 13 11 / 0.3) 88%, rgb(14 13 11 / 0.55) 100%)'
 
 const secao = useTemplateRef<HTMLElement>('secao')
-const foto = useTemplateRef<HTMLImageElement>('foto')
+const midia = useTemplateRef<HTMLElement>('midia')
 const chamada = useTemplateRef<HTMLElement>('chamada')
 
 const progresso = ref(0)
 const comMovimento = ref(false)
+
+/* Vídeo com LUT: perto da tela (até uma tela de distância) baixa e toca */
+const usarVideo = ref(false)
+const perto = ref(false)
+const videoAtual = shallowRef<HTMLVideoElement | null>(null)
+
+/*
+ * Intensidade da LUT: começa crua e chega à dose quando o rodapé termina de ser revelado.
+ * No rodapé a dose é menor que nas outras seções: a foto da estrada já é bem saturada.
+ */
+const DOSE_NO_RODAPE = 0.45
+const intensidade = computed(() => {
+  if (!comMovimento.value) return DOSE_NO_RODAPE
+  const t = Math.min(Math.max((progresso.value - 0.15) / 0.8, 0), 1)
+  return t * t * (3 - 2 * t) * DOSE_NO_RODAPE
+})
+
+let observadorVisao: IntersectionObserver | undefined
 const mm = gsap.matchMedia()
 
 onMounted(() => {
@@ -87,6 +113,7 @@ onMounted(() => {
         start: 'top top',
         end: '+=100%',
         pin: true,
+        anticipatePin: 1,
         scrub: true,
         invalidateOnRefresh: true,
         onUpdate: (self) => (progresso.value = self.progress),
@@ -95,7 +122,7 @@ onMounted(() => {
     })
     revelacao
       .fromTo(chamada.value?.children ?? [], { y: (i: number) => 50 + i * 30 }, { y: 0 }, 0)
-      .fromTo(foto.value, { yPercent: -6 }, { yPercent: 0 }, 0)
+      .fromTo(midia.value, { yPercent: -6 }, { yPercent: 0 }, 0)
 
     return () => {
       ScrollTrigger.removeEventListener('refreshInit', ajustarMargem)
@@ -106,23 +133,53 @@ onMounted(() => {
   })
 })
 
-onBeforeUnmount(() => mm.revert())
+onMounted(() => {
+  const nav = navigator as Navigator & { connection?: { saveData?: boolean } }
+  usarVideo.value = !prefereMenosMovimento() && !nav.connection?.saveData
+  if (!secao.value) return
+  observadorVisao = new IntersectionObserver(([entrada]) => (perto.value = !!entrada?.isIntersecting), {
+    rootMargin: '100% 0px',
+  })
+  observadorVisao.observe(secao.value)
+})
+
+onBeforeUnmount(() => {
+  mm.revert()
+  observadorVisao?.disconnect()
+})
 </script>
 
 <template>
   <footer id="rodape" ref="secao" class="relative isolate overflow-hidden bg-noite">
     <div aria-hidden="true" class="absolute inset-0 -z-10">
-      <!-- 112% de altura e -6% no topo: folga para o parallax não mostrar a borda -->
-      <img
-        ref="foto"
-        :src="fundo1536"
-        :srcset="`${fundo768} 768w, ${fundo1536} 1536w`"
-        sizes="100vw"
-        alt=""
-        loading="lazy"
-        decoding="async"
-        class="absolute inset-x-0 -top-[6%] h-[112%] w-full object-cover"
-      />
+      <!-- Mídia (foto, vídeo e LUT): 112% de altura e -6% no topo, folga para o parallax -->
+      <div ref="midia" class="absolute inset-x-0 -top-[6%] h-[112%] w-full">
+        <img
+          :src="fundo1536"
+          :srcset="`${fundo768} 768w, ${fundo1536} 1536w`"
+          sizes="100vw"
+          alt=""
+          decoding="async"
+          fetchpriority="low"
+          class="absolute inset-0 size-full object-cover"
+        />
+        <LoopVideo
+          v-if="usarVideo"
+          webm="/video/rodape.webm"
+          mp4="/video/rodape.mp4"
+          poster="/video/rodape-poster.jpg"
+          :tocar="perto"
+          :preload="perto ? 'auto' : 'metadata'"
+          @atual="videoAtual = $event"
+        />
+        <VideoComLut
+          v-if="usarVideo && videoAtual && LUT_DE_TESTE"
+          :video="videoAtual"
+          :lut="LUT_DE_TESTE"
+          :intensidade="intensidade"
+          :ativo="perto"
+        />
+      </div>
       <div class="absolute inset-0" :style="{ backgroundImage: degrade }" />
     </div>
 
